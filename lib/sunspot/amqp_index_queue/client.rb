@@ -6,6 +6,8 @@ module Sunspot
     class Client
       MAX_ATTEMPTS_COUNT = 5
       REINDEX_PERIOD = 300
+
+      # Single entry in the indexer queue
       class Entry
         ATTRIBUTES = [
           :object_id, :object_class_name, :to_remove,
@@ -141,7 +143,7 @@ module Sunspot
 
       def default_options
         HashWithIndifferentAccess.new({
-          :queue_name => "sunspot_index_queue",
+          :sunspot_index_queue_name => "sunspot_index_queue",
           :user => "guest",
           :pass => "guest",
           :host => "localhost",
@@ -151,7 +153,7 @@ module Sunspot
       end
 
       def queue_name
-        @options[:queue_name]
+        @options[:queue_name] || @options[:sunspot_index_queue_name]
       end
 
       def queue

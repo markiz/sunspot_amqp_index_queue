@@ -3,4 +3,4 @@ port: 5672
 vhost: "/"
 user: guest
 pass: guest
-queue_name: sunspot_amqp_index_queue_test
+sunspot_index_queue_name: sunspot_amqp_index_queue_test
