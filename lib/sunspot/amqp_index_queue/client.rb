@@ -101,8 +101,8 @@ module Sunspot
           end
         end
       rescue => e
-        if defined?(Rails)
-          Rails.logger.error "Exception raised while indexing: #{e.class}: #{e}"
+        if defined?(::Rails)
+          ::Rails.logger.error "Exception raised while indexing: #{e.class}: #{e}"
         end
         entry.run_at = REINDEX_PERIOD.since
         entry.attempts_count += 1
