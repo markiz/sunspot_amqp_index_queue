@@ -12,7 +12,7 @@ RSpec.configure do |c|
     $amqp_config = HashWithIndifferentAccess.new(YAML.load(File.read("spec/amqp.yml")))
     $bunny = Bunny.new($amqp_config)
     $bunny.start
-    $queue = $bunny.queue($amqp_config["queue_name"], :durable => false, :auto_delete => false)
+    $queue = $bunny.queue($amqp_config["sunspot_index_queue_name"], :durable => false, :auto_delete => false)
   end
 
   c.before(:each) do

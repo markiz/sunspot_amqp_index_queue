@@ -47,7 +47,7 @@ module Sunspot
 
       end
 
-      attr_reader :session, :bunny
+      attr_reader :session
 
       # Instantiate a new client session
       # @param [Sunspot::Session] session sunspot session that receive the
@@ -57,8 +57,6 @@ module Sunspot
       def initialize(session, client_opts = {})
         @session = session
         @options = default_options.merge(client_opts)
-        @bunny   = Bunny.new(@options.slice(:user, :pass, :host, :port, :vhost))
-        @bunny.start
       end
 
       # @return [Integer] Number of pending jobs in the queue
@@ -152,16 +150,29 @@ module Sunspot
         })
       end
 
+
+      # Current bunny session
+      # @api semipublic
+      def bunny
+        Thread.current[:sunspot_amqp_index_queue_bunny] ||= init_bunny
+      end
+
+      def init_bunny
+        bunny = Bunny.new(@options.slice(:user, :pass, :host, :port, :vhost))
+        bunny.start
+        bunny
+      end
+
       def queue_name
         @options[:queue_name] || @options[:sunspot_index_queue_name]
       end
 
       def queue
-        @queue ||= bunny.queue(queue_name, :passive => true, :durable => true)
+        Thread.current[:sunspot_amqp_index_queue_queue] ||= bunny.queue(queue_name, :passive => true, :durable => true)
       end
 
       def exchange
-        @exchange ||= bunny.exchange('')
+        Thread.current[:sunspot_amqp_index_queue_exchange] ||= bunny.exchange('')
       end
 
       def new_entry_for_object(object, extra_attributes = {})
