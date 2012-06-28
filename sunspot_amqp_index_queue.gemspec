@@ -4,9 +4,9 @@ require File.expand_path('../lib/sunspot/amqp_index_queue/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Mark Abramov"]
   gem.email         = ["markizko@gmail.com"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
-  gem.homepage      = ""
+  gem.description   = "Asynchronously handle your sunspot model indexing"
+  gem.summary       = "Asynchronously handle your sunspot model indexing"
+  gem.homepage      = "https://github.com/markiz/sunspot_amqp_index_queue"
 
   gem.add_dependency "sunspot"
   gem.add_dependency "bunny"
