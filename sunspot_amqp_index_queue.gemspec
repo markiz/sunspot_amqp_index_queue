@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "sunspot"
   gem.add_dependency "bunny"
-  gem.add_dependency "active_support"
+  gem.add_dependency "activesupport", ">= 3.0.0"
   gem.add_development_dependency "sunspot_solr"
   gem.add_development_dependency "rspec"
 
