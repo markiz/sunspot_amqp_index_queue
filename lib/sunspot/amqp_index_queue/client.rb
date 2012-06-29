@@ -57,6 +57,13 @@ module Sunspot
       def initialize(session, client_opts = {})
         @session = session
         @options = default_options.merge(client_opts)
+        prepare_queue_and_exchange
+      end
+
+      def prepare_queue_and_exchange
+        # trigger lazily evaluated initialization
+        queue
+        exchange
       end
 
       # @return [Integer] Number of pending jobs in the queue
