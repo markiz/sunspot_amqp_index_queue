@@ -154,7 +154,7 @@ module Sunspot
       # Current bunny session
       # @api semipublic
       def bunny
-        Thread.current[:sunspot_amqp_index_queue_bunny] ||= init_bunny
+        Thread.current["#{object_id}_bunny"] ||= init_bunny
       end
 
       def init_bunny
@@ -168,11 +168,11 @@ module Sunspot
       end
 
       def queue
-        Thread.current[:sunspot_amqp_index_queue_queue] ||= bunny.queue(queue_name, :passive => true, :durable => true)
+        Thread.current["#{object_id}_queue"] ||= bunny.queue(queue_name, :durable => true)
       end
 
       def exchange
-        Thread.current[:sunspot_amqp_index_queue_exchange] ||= bunny.exchange('')
+        Thread.current["#{object_id}_exchange"] ||= bunny.exchange('')
       end
 
       def new_entry_for_object(object, extra_attributes = {})
