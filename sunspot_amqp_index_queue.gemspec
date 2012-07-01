@@ -11,8 +11,14 @@ Gem::Specification.new do |gem|
   gem.add_dependency "sunspot"
   gem.add_dependency "bunny"
   gem.add_dependency "activesupport", ">= 3.0.0"
+
+  # testing
   gem.add_development_dependency "sunspot_solr"
   gem.add_development_dependency "rspec"
+
+  # documentation
+  gem.add_development_dependency "yard"
+  gem.add_development_dependency "kramdown"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }

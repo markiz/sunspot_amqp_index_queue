@@ -7,18 +7,31 @@ require 'sunspot/session_proxy/abstract_session_proxy'
 
 module Sunspot
   module AmqpIndexQueue
-    # This is a Sunspot::SessionProxy that works with the Client class.
+    # This is a Sunspot::SessionProxy that works with {Sunspot::AmqpIndexQueue::Client}
+    # class.
+    #
     # Most update requests will be added to the queue and processed
-    # asynchronously. The exceptions are the +remove+ method with
-    # a block and the +remove_all+ method. These will send their commands
+    # asynchronously. The exceptions are the `remove` method with
+    # a block and the `remove_all` method. These will send their commands
     # directly to Solr since the queue cannot handle delete by query.
     #
-    # You should avoid calling these methods
+    # You should avoid calling these methods unless you know what you're doing.
     class SessionProxy < Sunspot::SessionProxy::AbstractSessionProxy
       attr_reader :client, :session
 
       delegate :new_search, :search, :new_more_like_this, :more_like_this, :config, :to => :session
 
+      # Instantiate a session proxy
+      #
+      # @param [Sunspot::SessionProxy] session previously instantiated sunspot
+      #    session or session proxy.
+      # @option client_opts [String] "host" ("localhost") AMQP host name
+      # @option client_opts [Integer] "port" (55672) AMQP port
+      # @option client_opts [String] "user" ("guest") AMQP user name
+      # @option client_opts [String] "pass" ("guest") AMQP password
+      # @option client_opts [String] "vhost" ("/") AMQP vhost
+      # @option client_opts [String] "sunspot_index_queue_name" ("sunspot_index_queue")
+      #    AMQP index queue name
       def initialize(session, client_opts = {})
         @session = session
         @client = Client.new(session, client_opts)

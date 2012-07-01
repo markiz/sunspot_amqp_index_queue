@@ -3,11 +3,18 @@ require 'bunny'
 
 module Sunspot
   module AmqpIndexQueue
+    # Wrapper around AMQP queue. Provides several useful public API methods,
+    # such as {#count} and {#process}.
     class Client
+      # Number of failures allowed before being dropped from an index
+      # queue altogether
       MAX_ATTEMPTS_COUNT = 5
+
+      # Interval in seconds before reindex is attempted after a failure.
       REINDEX_PERIOD = 300
 
-      # Single entry in the indexer queue
+      # Wrapper around entry in an indexer queue
+      # @private
       class Entry
         ATTRIBUTES = [
           :object_id, :object_class_name, :to_remove,
@@ -52,18 +59,18 @@ module Sunspot
       # Instantiate a new client session
       # @param [Sunspot::Session] session sunspot session that receive the
       #     requests during processing
-      # @param [Hash] client_opts options for bunny client
+      # @option client_opts [String] "host" ("localhost") AMQP host name
+      # @option client_opts [Integer] "port" (55672) AMQP port
+      # @option client_opts [String] "user" ("guest") AMQP user name
+      # @option client_opts [String] "pass" ("guest") AMQP password
+      # @option client_opts [String] "vhost" ("/") AMQP vhost
+      # @option client_opts [String] "sunspot_index_queue_name" ("sunspot_index_queue")
+      #    AMQP index queue name
       # @api public
       def initialize(session, client_opts = {})
         @session = session
         @options = default_options.merge(client_opts)
         prepare_queue_and_exchange
-      end
-
-      def prepare_queue_and_exchange
-        # trigger lazily evaluated initialization
-        queue
-        exchange
       end
 
       # @return [Integer] Number of pending jobs in the queue
@@ -92,13 +99,91 @@ module Sunspot
       # @api public
       def process(limit = 10)
         i = 0
-        while i < limit && entry = pop_next_available
+        while i < limit && (entry = pop_next_available)
           process_entry(entry)
           i += 1
         end
         i
       end
 
+      protected
+
+      # List of default options ofr a client
+      # @api semipublic
+      def default_options
+        HashWithIndifferentAccess.new({
+          :sunspot_index_queue_name => "sunspot_index_queue",
+          :user => "guest",
+          :pass => "guest",
+          :host => "localhost",
+          :port => "5672",
+          :vhost => "/"
+        })
+      end
+
+      # Current bunny session.
+      # @api semipublic
+      def bunny
+        Thread.current["#{object_id}_bunny"] ||= init_bunny
+      end
+
+      # Index queue name
+      # @api semipublic
+      def queue_name
+        @options[:sunspot_index_queue_name] || @options[:queue_name]
+      end
+
+      # Bunny index queue
+      # @api semipublic
+      def queue
+        Thread.current["#{object_id}_queue"] ||= bunny.queue(queue_name, :durable => true)
+      end
+
+      # Bunny exchange
+      # @api semipublic
+      def exchange
+        Thread.current["#{object_id}_exchange"] ||= bunny.exchange('')
+      end
+
+
+      # Push an entry into the queue
+      # @api semipublic
+      def push(entry)
+        exchange.publish(Marshal.dump(entry), :key => queue_name)
+      end
+
+      # Pops an entry from the queue
+      # @api semipublic
+      def pop
+        entry = queue.pop[:payload]
+        if (entry != :queue_empty)
+          Marshal.load(entry)
+        else
+          nil
+        end
+      end
+
+      # Gets a next available (with run_at < Time.now) entry out of the
+      # queue. All the skipped entries are then pushed back into the queue.
+      # @api semipublic
+      def pop_next_available
+        unused_entries = []
+        result = nil
+        while (entry = pop)
+          if entry.run_at <= Time.now
+            result = entry
+            break
+          else
+            unused_entries << entry
+          end
+        end
+        unused_entries.each {|e| push(e) }
+        result
+      end
+
+
+      # Index or remove an entry
+      # @api semipublic
       def process_entry(entry)
         if entry.attempts_count < MAX_ATTEMPTS_COUNT
           if entry.to_remove
@@ -116,77 +201,26 @@ module Sunspot
         push(entry)
       end
 
-      def push(entry)
-        exchange.publish(Marshal.dump(entry), :key => queue_name)
+      # @api private
+      def new_entry_for_object(object, extra_attributes = {})
+        Entry.new({
+          :object_id         => object.id,
+          :object_class_name => object.class.name
+        }.merge(extra_attributes))
       end
 
-      def pop
-        entry = queue.pop[:payload]
-        if (entry != :queue_empty)
-          Marshal.load(entry)
-        else
-          nil
-        end
-      end
-
-      def pop_next_available
-        unused_entries = []
-        result = nil
-        while (entry = pop)
-          if entry.run_at <= Time.now
-            result = entry
-            break
-          else
-            unused_entries << entry
-          end
-        end
-        unused_entries.each {|e| push(e) }
-        result
-      end
-
-      protected
-
-      def default_options
-        HashWithIndifferentAccess.new({
-          :sunspot_index_queue_name => "sunspot_index_queue",
-          :user => "guest",
-          :pass => "guest",
-          :host => "localhost",
-          :port => "5672",
-          :vhost => "/"
-        })
-      end
-
-
-      # Current bunny session
-      # @api semipublic
-      def bunny
-        Thread.current["#{object_id}_bunny"] ||= init_bunny
-      end
-
+      # @api private
       def init_bunny
         bunny = Bunny.new(@options.slice(:user, :pass, :host, :port, :vhost))
         bunny.start
         bunny
       end
 
-      def queue_name
-        @options[:queue_name] || @options[:sunspot_index_queue_name]
-      end
-
-      def queue
-        Thread.current["#{object_id}_queue"] ||= bunny.queue(queue_name, :durable => true)
-      end
-
-      def exchange
-        Thread.current["#{object_id}_exchange"] ||= bunny.exchange('')
-      end
-
-      def new_entry_for_object(object, extra_attributes = {})
-        entry = Entry.new({
-          :object_id         => object.id,
-          :object_class_name => object.class.name
-        }.merge(extra_attributes))
+      # @api private
+      def prepare_queue_and_exchange
+        # trigger lazily evaluated initialization
+        queue
+        exchange
       end
     end
   end
