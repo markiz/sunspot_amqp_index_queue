@@ -56,3 +56,7 @@ end
 3. Commit your changes (`git commit -am 'Added some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## License
+
+This library is in [public domain](http://unlicense.org/UNLICENSE).
