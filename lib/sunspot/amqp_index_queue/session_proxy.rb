@@ -31,6 +31,9 @@ module Sunspot
       # @option client_opts [String] "pass" ("guest") AMQP password
       # @option client_opts [String] "vhost" ("/") AMQP vhost
       # @option client_opts [String] "sunspot_index_queue_name" ("sunspot_index_queue")
+      # @option client_opts [Integer] "retry_interval" (300) time before next
+      #    indexing attempt in case of failure / exception
+      # @option client_opts [Integer] "max_attempts_count" (5) attempts count
       #    AMQP index queue name
       def initialize(session, client_opts = {})
         @session = session
