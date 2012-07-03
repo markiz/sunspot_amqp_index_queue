@@ -35,6 +35,9 @@ module Sunspot
       #    indexing attempt in case of failure / exception
       # @option client_opts [Integer] "max_attempts_count" (5) attempts count
       #    AMQP index queue name
+      # @option client_opts [Integer] "index_delay" (0) delay in seconds between receiving
+      #    a message about indexing and trying to process it
+      # @api public
       def initialize(session, client_opts = {})
         @session = session
         @client = Client.new(session, client_opts)

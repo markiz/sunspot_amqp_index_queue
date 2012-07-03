@@ -62,6 +62,8 @@ module Sunspot
       # @option client_opts [Integer] "retry_interval" (300) time before next
       #    indexing attempt in case of failure / exception
       # @option client_opts [Integer] "max_attempts_count" (5) attempts count
+      # @option client_opts [Integer] "index_delay" (0) delay in seconds between receiving
+      #    a message about indexing and trying to process it
       # @api public
       def initialize(session, client_opts = {})
         @session = session
@@ -132,7 +134,8 @@ module Sunspot
           :port => "5672",
           :vhost => "/",
           :max_attempts_count => 5,
-          :retry_interval     => 300
+          :retry_interval     => 300,
+          :index_delay        => 0
         })
       end
       # Number of failures allowed before being dropped from an index
@@ -170,6 +173,10 @@ module Sunspot
       # @api semipublic
       def exchange
         Thread.current["#{object_id}_exchange"] ||= bunny.exchange('')
+      end
+
+      def index_delay
+        @options[:index_delay]
       end
 
       # Gets a next available (with run_at < Time.now) entry out of the
@@ -214,7 +221,8 @@ module Sunspot
       def new_entry_for_object(object, extra_attributes = {})
         Entry.new({
           :object_id         => object.id,
-          :object_class_name => object.class.name
+          :object_class_name => object.class.name,
+          :run_at            => Time.now + index_delay
         }.merge(extra_attributes))
       end
 
