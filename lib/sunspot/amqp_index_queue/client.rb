@@ -121,6 +121,14 @@ module Sunspot
         end
       end
 
+      # Reset bunny connection
+      # @api semipublic
+      def reset
+        self.bunny = nil
+        self.queue = nil
+        self.exchange = nil
+      end
+
       protected
 
       # List of default options ofr a client
@@ -157,6 +165,11 @@ module Sunspot
         Thread.current["#{object_id}_bunny"] ||= init_bunny
       end
 
+      # @api private
+      def bunny=(bunny)
+        Thread.current["#{object_id}_bunny"] = bunny
+      end
+
       # Index queue name
       # @api semipublic
       def queue_name
@@ -169,10 +182,21 @@ module Sunspot
         Thread.current["#{object_id}_queue"] ||= bunny.queue(queue_name, :durable => true)
       end
 
+      # @api private
+      def queue=(queue)
+        Thread.current["#{object_id}_queue"] = queue
+      end
+
+
       # Bunny exchange
       # @api semipublic
       def exchange
         Thread.current["#{object_id}_exchange"] ||= bunny.exchange('')
+      end
+
+      # @api private
+      def exchange=(exch)
+        Thread.current["#{object_id}_exchange"] = exch
       end
 
       def index_delay
